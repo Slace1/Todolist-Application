@@ -3,10 +3,12 @@ import { ref, onMounted, computed, watch } from 'vue'
 
 const todos = ref([])
 const name = ref('')
+const isAuthenticated = ref(false) // Utilisateur authentifié
+const username = ref('')
 
 const input_content = ref('')
 const input_category = ref(null)
-const input_expired_date = ref('') // Ajout de la date limite
+const input_expired_date = ref('')
 
 const todos_asc = computed(() => todos.value.sort((a,b) =>{
 	return a.expired_date - b.expired_date
@@ -17,20 +19,14 @@ const todos_expired_sorted = computed (()=> {
     return todos_asc.value.filter(todo => todo.expired_date < now && !todo.done);
 })
 
-
-
 const todos_not_expired_sorted = computed (()=> {
     const now= new Date().getTime();
     return todos_asc.value.filter(todo => todo.expired_date > now && !todo.done);
 })
 
-
 const todos_done = computed (()=> {
     return todos_asc.value.filter(todo => todo.done);
 })
-
-
-
 
 watch(name, (newVal) => {
 	localStorage.setItem('name', newVal)
@@ -61,15 +57,31 @@ const removeTodo = (todo) => {
 	todos.value = todos.value.filter((t) => t !== todo)
 }
 
+const login = () => {
+	if (username.value.trim() === '') {
+		return
+	}
+
+	name.value = username.value
+	localStorage.setItem('name', name.value)
+
+	isAuthenticated.value = true // Authentifier l'utilisateur
+}
+
 onMounted(() => {
 	name.value = localStorage.getItem('name') || ''
+
+	if (name.value !== '') {
+		isAuthenticated.value = true // Authentifier l'utilisateur s'il est déjà connecté
+	}
+
 	todos.value = JSON.parse(localStorage.getItem('todos')) || []
 })
 </script>
 
+
 <template>
-	<main class="app">
-		
+	<main class="app" v-if="isAuthenticated">
 		<section class="greeting">
 			<h2 class="title">
 				What's up, <input type="text" id="name" placeholder="Name here" v-model="name">
@@ -205,5 +217,19 @@ onMounted(() => {
 			</div>
 		</section>
 
+		<!-- Reste du code actuel ici -->
+
+	</main>
+	<main v-else>
+		<section class="login">
+			<h2 class="title">Enter your name to login:</h2>
+			<form @submit.prevent="login">
+				<label>
+					Name:
+					<input type="text" v-model="username" required />
+				</label>
+				<input type="submit" value="Login" />
+			</form>
+		</section>
 	</main>
 </template>
